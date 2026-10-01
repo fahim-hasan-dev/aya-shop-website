@@ -5,16 +5,15 @@ export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const clientSession = req.cookies.get("aya_client_session")?.value;
 
-  const protectedClient =
-    pathname === "/home" ||
-    pathname === "/search" ||
-    pathname === "/profile" ||
-    pathname === "/listings" ||
-    pathname.startsWith("/messages") ||
-    pathname.startsWith("/services/");
+  const isBookingRoute = pathname.includes("/book");
 
-  const clientAuthRoute =
-    pathname === "/client/login" || pathname === "/client/otp";
+  const protectedClient =
+    pathname === "/profile" ||
+    pathname === "/bookings" ||
+    pathname.startsWith("/bookings/") ||
+    pathname.startsWith("/messages") ||
+    pathname.startsWith("/notifications") ||
+    isBookingRoute;
 
   if (protectedClient && !clientSession) {
     const url = req.nextUrl.clone();
@@ -25,20 +24,18 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Allow visiting client auth routes even if already logged in
-
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/home",
-    "/search",
     "/profile",
-    "/listings",
+    "/bookings/:path*",
     "/messages/:path*",
-    "/services/:path*",
+    "/notifications/:path*",
+    "/services/:path*/book",
     "/client/login",
     "/client/otp",
   ],
 };
+

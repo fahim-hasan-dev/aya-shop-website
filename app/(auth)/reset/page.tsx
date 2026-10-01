@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { authService } from "@/services/authService";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token") || "";
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -28,28 +32,31 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (formData.newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters long!");
+    if (formData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long!");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Your reset password API logic here
-      // const response = await fetch("/api/auth/reset-password", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ password: formData.newPassword }),
-      // });
+      const response = await authService.resetPassword(
+        {
+          newPassword: formData.newPassword,
+          confirmPassword: formData.confirmPassword,
+        },
+        token
+      );
 
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      toast.success("Password reset successfully!");
-      router.push("/login");
-    } catch (error) {
-      toast.error("Failed to reset password. Please try again.");
+      if (response.success) {
+        toast.success(response.message || "Password reset successfully!");
+        router.push("/client/login");
+      } else {
+        toast.error(response.message || "Failed to reset password.");
+      }
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      toast.error(error.message || "Failed to reset password. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -60,14 +67,13 @@ export default function ResetPasswordPage() {
       {/* Left Side - Form */}
       <div className="flex items-center justify-center px-6 py-12 bg-white">
         <div className="w-full max-w-md space-y-8">
-
           {/* Header */}
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold text-gray-900">
               Reset Password
             </h1>
             <p className="text-sm text-gray-600">
-              Please set your Strong new password
+              Please enter your strong new password
             </p>
           </div>
 
@@ -149,10 +155,10 @@ export default function ResetPasswordPage() {
             {/* Set Button */}
             <Button
               type="submit"
-              className="w-full h-11 rounded-3xl bg-[#0A5C36] hover:bg-[#154a2e] text-white"
+              className="w-full h-11 rounded-3xl bg-[#0A5C36] hover:bg-[#154a2e] text-white cursor-pointer"
               disabled={isLoading}
             >
-              {isLoading ? "Setting..." : "Set"}
+              {isLoading ? "Setting..." : "Reset Password"}
             </Button>
           </form>
         </div>
@@ -170,5 +176,13 @@ export default function ResetPasswordPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="py-20 text-center text-slate-500">Loading...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

@@ -30,13 +30,30 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token and redirect to login if unauthorized
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      window.location.href = "/login";
+      // Clear tokens and session cookie
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userInfo");
+        document.cookie = "aya_client_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+        const currentPath = window.location.pathname;
+        const isProtectedPath =
+          currentPath === "/profile" ||
+          currentPath.startsWith("/bookings") ||
+          currentPath.startsWith("/messages") ||
+          currentPath.startsWith("/notifications") ||
+          currentPath.includes("/book");
+
+        if (isProtectedPath) {
+          window.location.href = `/client/login?redirect=${encodeURIComponent(currentPath + window.location.search)}`;
+        }
+      }
     }
     return Promise.reject(error);
   }
 );
+
 
 export default axiosInstance;
