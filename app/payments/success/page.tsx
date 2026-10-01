@@ -6,7 +6,9 @@ import { Loader2, CheckCircle } from "lucide-react";
 import { userService } from "@/services/userService";
 import { toast } from "sonner";
 
-export default function PaymentSuccessPage() {
+import { Suspense } from "react";
+
+function PaymentSuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const sessionId = searchParams.get("session_id");
@@ -71,5 +73,17 @@ export default function PaymentSuccessPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function PaymentSuccessPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col min-h-screen bg-gray-50 items-center justify-center p-4">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0A4D2E]" />
+            </div>
+        }>
+            <PaymentSuccessContent />
+        </Suspense>
     );
 }
