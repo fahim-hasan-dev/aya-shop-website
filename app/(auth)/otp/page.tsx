@@ -77,10 +77,25 @@ function OTPVerifyContent() {
           const token = response.data?.token || response.data?.accessToken || "";
           router.push(`/reset?token=${encodeURIComponent(token)}`);
         } else {
-          const role = (localStorage.getItem("userRole") || response.data?.userInfo?.role || "").toLowerCase();
+          const userInfo = response.data?.userInfo || JSON.parse(localStorage.getItem('userInfo') || '{}');
+          const role = (localStorage.getItem("userRole") || userInfo?.role || "").toLowerCase();
+          
           if (role === "business") {
-            toast.info("Please set up your business profile information.");
-            router.push("/business/profile");
+            const status = userInfo?.businessStatus;
+            const subscribe = userInfo?.subscribe;
+            
+            if (!status) {
+                toast.info("Please set up your business profile information.");
+                router.push("/business/profile");
+            } else if (!subscribe) {
+                toast.info("Please subscribe to a plan to continue.");
+                router.push("/business/subscription");
+            } else if (status === "pending") {
+                toast.info("Your account is pending admin approval.");
+                router.push("/business/profile");
+            } else {
+                router.push("/business");
+            }
           } else {
             router.push("/home");
           }

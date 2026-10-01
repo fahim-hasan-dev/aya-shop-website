@@ -27,7 +27,23 @@ export default function BusinessLoginPage() {
             const response = await authService.login(formData, 'business');
             if (response.success) {
                 toast.success(response.message || "Login successful!");
-                router.push("/business");
+                const userInfo = response.data?.userInfo || JSON.parse(localStorage.getItem('userInfo') || '{}');
+                const status = userInfo?.businessStatus;
+                const subscribe = userInfo?.subscribe;
+                
+                if (!status) {
+                    toast.info("Please set up your business profile information.");
+                    router.push("/business/profile");
+                } else if (!subscribe) {
+                    toast.info("Please subscribe to a plan to continue.");
+                    router.push("/business/subscription");
+                } else if (status === "pending") {
+                    toast.info("Your account is pending admin approval.");
+                    // router.push("/business/pending-approval"); // or wherever the pending screen is
+                    router.push("/business/profile"); // fallback for now
+                } else {
+                    router.push("/business");
+                }
             } else {
                 toast.error(response.message || "Login failed");
             }

@@ -10,6 +10,15 @@ export const serviceService = {
     }
   },
 
+  getMyServices: async (params?: { page?: number; limit?: number; search?: string }) => {
+    try {
+      const response = await axiosInstance.get("/service/my-services", { params });
+      return response.data;
+    } catch (error: any) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   getSingleService: async (id: string) => {
     try {
       const response = await axiosInstance.get(`/service/${id}`);

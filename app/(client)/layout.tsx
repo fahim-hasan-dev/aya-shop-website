@@ -130,6 +130,15 @@ export default function ClientLayout({
                                     </span>
                                 </Link>
 
+                                {user?.role === "business" && (
+                                    <Link href="/business">
+                                        <Button className="h-10 px-5 rounded-xl bg-[#0A5C36] hover:bg-[#064E3B] text-white font-bold text-xs shadow-md shadow-emerald-900/20 active:scale-95 transition-all flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4" />
+                                            Dashboard
+                                        </Button>
+                                    </Link>
+                                )}
+
                                 <button
                                     onClick={handleLogout}
                                     title="Log Out"
@@ -191,6 +200,13 @@ export default function ClientLayout({
                                     <Link href="/bookings" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl font-bold text-slate-700 hover:bg-slate-50">
                                         <Calendar className="w-5 h-5 text-[#0A5C36]" /> Bookings
                                     </Link>
+                                    
+                                    {user?.role === "business" && (
+                                        <Link href="/business" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl font-bold text-[#0A5C36] bg-emerald-50 hover:bg-emerald-100">
+                                            <Sparkles className="w-5 h-5" /> Dashboard
+                                        </Link>
+                                    )}
+
                                     <button onClick={handleLogout} className="w-full flex items-center gap-3 p-3 rounded-xl font-bold text-red-600 hover:bg-red-50">
                                         <LogOut className="w-5 h-5" /> Logout
                                     </button>

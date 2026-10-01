@@ -19,8 +19,9 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -50,36 +51,35 @@ export default function ProfilePage() {
         fetchProfile();
     }, []);
 
-    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        setIsUploading(true);
-        const toastId = toast.loading("Uploading image...");
-        try {
-            const response = await fileService.uploadFile(file);
-            if (response.success) {
-                setFormData(prev => ({ ...prev, image: response.data.url }));
-                toast.success("Image uploaded successfully", { id: toastId });
-                // If not in editing mode, update immediately? 
-                // User might want to save all changes at once. 
-                // Let's keep it in formData for now so they click Save.
-            } else {
-                toast.error("Upload failed", { id: toastId });
-            }
-        } catch (error: any) {
-            toast.error(error.message || "Upload failed", { id: toastId });
-        } finally {
-            setIsUploading(false);
-        }
+        setSelectedImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+        setIsEditing(true); // Auto enable edit mode to show save button
     };
 
     const handleUpdate = async () => {
         setIsUpdating(true);
         try {
-            const response = await userService.updateProfile(formData);
+            const formDataObj = new FormData();
+            formDataObj.append("data", JSON.stringify(formData));
+            
+            if (selectedImageFile) {
+                formDataObj.append("image", selectedImageFile);
+            }
+
+            const response = await userService.updateProfile(formDataObj);
             if (response.success) {
                 setProfile(response.data);
+                setFormData({
+                    fullName: response.data.fullName || "",
+                    phone: response.data.phone || "",
+                    image: response.data.image || ""
+                });
+                setSelectedImageFile(null);
+                setImagePreview(null);
                 setIsEditing(false);
                 toast.success("Profile updated successfully");
             }
@@ -128,21 +128,16 @@ export default function ProfilePage() {
                     <div className="absolute top-0 left-0 w-full h-32 bg-[#0A5C36]/5 -z-10" />
 
                     <div className="relative inline-block mb-6 group">
-                        <div className={`w-32 h-32 rounded-[40px] bg-gray-100 border-4 border-white overflow-hidden shadow-xl flex items-center justify-center transition-opacity ${isUploading ? 'opacity-50' : ''}`}>
-                            {formData.image ? (
-                                <img src={formData.image} alt="" className="w-full h-full object-cover" />
+                        <div className={`w-32 h-32 rounded-[40px] bg-gray-100 border-4 border-white overflow-hidden shadow-xl flex items-center justify-center transition-opacity`}>
+                            {imagePreview || formData.image ? (
+                                <img src={imagePreview || (formData.image.startsWith('http') ? formData.image : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}${formData.image}`)} alt="" className="w-full h-full object-cover" />
                             ) : (
                                 <User className="w-12 h-12 text-gray-300" />
-                            )}
-                            {isUploading && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-6 h-6 border-2 border-[#0A5C36] border-t-transparent rounded-full animate-spin" />
-                                </div>
                             )}
                         </div>
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploading}
+                            disabled={isUpdating}
                             className="absolute bottom-1 right-1 p-2.5 bg-[#0A5C36] text-white rounded-xl shadow-lg hover:scale-110 transition-all disabled:opacity-50 disabled:scale-100"
                         >
                             <Camera className="w-4 h-4" />

@@ -74,13 +74,13 @@ export default function BusinessListingsPage() {
         setIsLoading(true);
         try {
             const [servicesRes, categoriesRes, notifRes] = await Promise.all([
-                serviceService.getServices({ page: 1, limit: 100 }),
+                serviceService.getMyServices({ page: 1, limit: 100 }),
                 categoryService.getCategories(),
                 notificationService.getUnreadCount()
             ]);
 
             if (servicesRes.success) setListings(Array.isArray(servicesRes.data) ? servicesRes.data : servicesRes.data?.data || []);
-            if (categoriesRes.success) setCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : categoriesRes.data?.data || []);
+            if (categoriesRes.success) setCategories(categoriesRes.data?.categories || []);
             if (notifRes.success) setUnreadNotifCount(notifRes.data?.unreadCount || 0);
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -178,9 +178,9 @@ export default function BusinessListingsPage() {
                 name: formValues.name,
                 category: formValues.category,
                 description: formValues.description,
-                price: Number(formValues.price),
+                price: Number(formValues.price) || 0,
                 duration: formValues.duration,
-                maxBookingsPerDay: Number(formValues.maxBookingsPerDay) || 0,
+                maxBookingsPerDay: Math.max(Number(formValues.maxBookingsPerDay) || 1, 1),
                 serviceType: formValues.serviceType,
                 features: formValues.features.split(",").map(f => f.trim()).filter(f => f !== ""),
                 clientRequirements: formValues.clientRequirements,
@@ -418,13 +418,17 @@ export default function BusinessListingsPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Category ID</label>
-                                <Input 
-                                    placeholder="Enter Category ID"
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Business Category</label>
+                                <select 
                                     value={formValues.category}
                                     onChange={e => setFormValues({...formValues, category: e.target.value})}
-                                    className="h-12 rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all font-bold"
-                                />
+                                    className="w-full h-12 rounded-xl border border-gray-100 bg-gray-50 font-bold px-4 focus:ring-2 focus:ring-[#0A4D2E] outline-none appearance-none cursor-pointer"
+                                >
+                                    <option value="" disabled>Select category</option>
+                                    {categories.map((cat: any) => (
+                                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 
@@ -465,7 +469,7 @@ export default function BusinessListingsPage() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Daily Cap</label>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Max Booking</label>
                                 <Input 
                                     type="number"
                                     placeholder="5"

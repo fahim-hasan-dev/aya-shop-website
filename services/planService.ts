@@ -49,4 +49,13 @@ export const planService = {
       throw error.response?.data || error.message;
     }
   },
+
+  createCheckoutSession: async (planId: string) => {
+    try {
+      const response = await axiosInstance.post(`/plan/create-checkout-session/${planId}`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response?.data || error.message;
+    }
+  },
 };

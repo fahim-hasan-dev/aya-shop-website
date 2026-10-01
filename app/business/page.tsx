@@ -27,53 +27,51 @@ import {
 } from "lucide-react";
 import { reviewService } from "@/services/reviewService";
 import { notificationService } from "@/services/notificationService";
-
-const metrics = [
-  { icon: Eye, label: "Total Views", value: "1,247" },
-  { icon: Clock, label: "Bookings", value: "89" },
-  { icon: DollarSign, label: "Revenue", value: "$12,450" },
-  { icon: ListChecks, label: "Total Listing", value: "3" },
-];
-
-const listings = [
-  { name: "Tony's Italian Restaurant", category: "Restaurants", rating: 4.9 },
-  { name: "Quick Lunch Catering", category: "Catering", rating: 4.7 },
-];
+import { metaService } from "@/services/metaService";
+import { serviceService } from "@/services/serviceService";
 
 export default function BusinessOverviewPage() {
   const router = useRouter();
   const [recentReviews, setRecentReviews] = useState<any[]>([]);
   const [isReviewsLoading, setIsReviewsLoading] = useState(true);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRecentReviews = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await reviewService.getBusinessMyReviews({ page: 1, limit: 2 });
-        if (response.success) {
-          setRecentReviews(response.data.reviews || []);
-        }
+        setIsLoading(true);
+        const [reviewsRes, notifRes, analyticsRes, listingsRes] = await Promise.all([
+            reviewService.getBusinessMyReviews({ page: 1, limit: 2 }).catch(() => ({ success: false, data: { reviews: [] } })),
+            notificationService.getUnreadCount().catch(() => ({ success: false, data: { unreadCount: 0 } })),
+            metaService.getProviderAnalytics().catch(() => ({ success: false, data: null })),
+            serviceService.getMyServices({ page: 1, limit: 3 }).catch(() => ({ success: false, data: { data: [] } }))
+        ]);
+
+        if (reviewsRes.success) setRecentReviews(reviewsRes.data.reviews || []);
+        if (notifRes.success) setUnreadNotifCount(notifRes.data?.unreadCount || 0);
+        if (analyticsRes.success) setAnalytics(analyticsRes.data);
+        if (listingsRes.success) setMyListings(listingsRes.data?.data || []);
       } catch (error) {
-        console.error("Error fetching recent reviews:", error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setIsReviewsLoading(false);
+        setIsLoading(false);
       }
     };
 
-    const fetchUnreadCount = async () => {
-      try {
-        const response = await notificationService.getUnreadCount();
-        if (response.success) {
-          setUnreadNotifCount(response.data?.unreadCount || 0);
-        }
-      } catch (error) {
-        console.error("Error fetching unread count:", error);
-      }
-    };
-
-    fetchRecentReviews();
-    fetchUnreadCount();
+    fetchDashboardData();
   }, []);
+
+  const metrics = [
+    { icon: Eye, label: "Total Views", value: analytics?.totalViews || "0" },
+    { icon: Clock, label: "Bookings", value: analytics?.totalBookings || "0" },
+    { icon: DollarSign, label: "Revenue", value: `$${analytics?.totalRevenue || "0"}` },
+    { icon: ListChecks, label: "Total Listing", value: analytics?.totalListing || "0" },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50/50 pb-24 client-ui">
@@ -158,24 +156,30 @@ export default function BusinessOverviewPage() {
             {/* Active Listings */}
             <div className="bg-white rounded-[40px] border border-gray-100 p-8 shadow-sm">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-gray-900">Active Listings (3)</h3>
+                <h3 className="text-xl font-black text-gray-900">Active Listings ({myListings.length})</h3>
                 <Link href="/business/listings" className="text-sm font-black text-[#0A4D2E] bg-green-50 px-4 py-2 rounded-xl hover:bg-green-100 transition-all">
                   View All
                 </Link>
               </div>
               <div className="space-y-4">
-                {listings.map((l) => (
-                  <div key={l.name} className="flex items-center justify-between rounded-[28px] bg-gray-50/80 px-6 py-5 hover:bg-white border border-transparent hover:border-gray-100 transition-all cursor-pointer">
-                    <div className="space-y-1">
-                      <p className="font-black text-gray-900">{l.name}</p>
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{l.category}</p>
+                {myListings.length > 0 ? (
+                  myListings.map((l) => (
+                    <div key={l._id} className="flex items-center justify-between rounded-[28px] bg-gray-50/80 px-6 py-5 hover:bg-white border border-transparent hover:border-gray-100 transition-all cursor-pointer">
+                      <div className="space-y-1">
+                        <p className="font-black text-gray-900">{l.name}</p>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{l.category?.name || "Service"}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm">
+                        <Star className="w-4 h-4 text-[#0A4D2E] fill-[#0A4D2E]" />
+                        <span className="font-black text-gray-900">{l.rating?.averageRating || 0}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm">
-                      <Star className="w-4 h-4 text-[#0A4D2E] fill-[#0A4D2E]" />
-                      <span className="font-black text-gray-900">{l.rating}</span>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-400 font-bold">
+                    No active listings yet.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

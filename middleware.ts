@@ -33,7 +33,7 @@ export const config = {
     "/bookings/:path*",
     "/messages/:path*",
     "/notifications/:path*",
-    "/services/:path*/book",
+    "/services/:id/book",
     "/client/login",
     "/client/otp",
   ],
